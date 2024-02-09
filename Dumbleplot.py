@@ -8,15 +8,31 @@ from numbers_parser import Document
 from os import path as path
 import collections
 
+## ToDo: implement range for xlim, ylim
+## ToDo: implement support for excel
 
 class DataImport:
 
-    def handle_data(self):
+    def __init__(self, pathtofile, filename):
+        self.pathtofile = pathtofile
+        self.filename = filename
+
+    def choose_destiny(self):
         print("not done yet :/")
         # get file extension
         # set import document according to file extension
         # set variables that are related to file; rn it is set to .numbers
         # but .column[] for example is different for Excel and numbers
+
+    def import_data(self, sheet_nr=None, table_nr=None):
+        filepath = path.join(self.pathtofile, self.filename)
+
+        # Import for .numbers:
+        doc = Document(filepath)
+        sheets = doc.sheets
+        tables = sheets[sheet_nr].tables
+        data = tables[table_nr].rows(values_only=True)
+        self.df = pd.DataFrame(data[1:], columns=data[0])
 
 
 class Data:
@@ -31,26 +47,26 @@ class Data:
         rfc, cfc = first_cell
         rlc, clc = last_cell
         self.data_table = dataframe.loc[rfc:rlc, cfc:clc]
-        print(self.data_table)
 
     def make_dict(self):
         for n in range(self.n_datasets):
 
-            if self.row_or_column == "column":
-                for col in range(1, len(self.data_table.columns)):  # starts at 1, assumes that x-data is stored in column 0
+            if self.row_or_column == "columns":
+                for col in range(1,
+                                 len(self.data_table.columns)):  # starts at 1, assumes that x-data is stored in column 0
                     self.dataset_properties["data"] = self.data_table.iloc[:, col]
                     self.dataset_properties["name"] = self.data_table.columns[col]
 
-            elif self.row_or_column == "row":
+            elif self.row_or_column == "rows":
                 for row in range(1, self.data_table.shape[0]):
-                    self.dataset_properties["data"] = self.data_table.iloc[row, 1]
+                    self.dataset_properties["data"] = self.data_table.iloc[row, 1:]
                     self.dataset_properties["name"] = self.data_table.iloc[
                         row, 0]  # assumes that data labels are in the first column
 
             else:
                 raise Exception("Error: typo or wrong input, row_or_column needs to be set to column or row")
 
-            self.ydata[f"y{n}"] = self.dataset_properties
+            self.ydata[n] = self.dataset_properties
 
     def get_xdata(self):
         if self.row_or_column == "column":
@@ -60,10 +76,14 @@ class Data:
             # first cell contains x-data name or can be empty
 
     def display_data(self):
-        print("x-data", self.xdata)
-        print("y-data:")
+        # make it display data after nan-removal
+        #print("x-data:")
+        #print(self.xdata)
+        #print("y-data:")
         for data in self.ydata:
+            print("x:", self.ydata[data]["xdata"])
             print(data, ":", self.ydata[data]["data"])
+
 
     def get_idx_from_values(self, ydata):
         notnan_idx = []
@@ -84,9 +104,10 @@ class Data:
     # checks ydata for nan and assigns a xdata-set to each ydata
     # if nan found, deletes it and the corresponding xdata
     def delete_nans(self):
-        for data, properties in self.ydata.items():
-            ydata = properties["data"]
-            if ydata.isna().values().any():
+        for dataset, properties in self.ydata.items():
+            specific_dataset = self.ydata[dataset]
+            ydata = specific_dataset["data"]
+            if ydata.isna().any():
                 notnanidxlist = self.get_idx_from_values(ydata)
                 x_vals, y_vals = self.get_values(notnanidxlist, ydata)
                 properties["xdata"], properties["data"] = x_vals, y_vals
@@ -94,7 +115,23 @@ class Data:
                 properties["xdata"] = self.xdata
 
 
+class Plotter:
 
+    def __init__(self, plot_properties):
+        self.pp = plot_properties
+        self.pp["xtick_number"] = None
+        self.pp["ytick_number"] = None
 
+    def set_limits(self):
+        if self.pp["x-range"][0] is not None:
+            self.pp["x-range"][0] = self.pp["x-range"][0]
+            self.pp["x-range"][1]  = self.pp["x-range"][1]
+        if self.pp["y-range"][0] is not None:
+            self.pp["y-range"][0] = self.pp["y-range"][0]
+            self.pp["y-range"][1] = self.pp["y-range"][1]
 
-
+    def set_major_ticks(self):
+        if self.pp["x-ticks"] is not None:
+            self.pp["xtick_number"] = ticker.MaxNLocator(self.pp["x-ticks"])
+        if self.pp["y-ticks"] is not None:
+            self.pp["ytick_number"] = ticker.MaxNLocator(self.pp["y-ticks"])
