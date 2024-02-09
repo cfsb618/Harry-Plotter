@@ -92,6 +92,7 @@ class Data:
                 properties["xdata"], properties["data"] = x_vals, y_vals
             else:
                 properties["xdata"] = self.xdata
+                #
 
 
 
