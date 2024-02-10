@@ -10,6 +10,9 @@ import collections
 
 ## ToDo: implement range for xlim, ylim
 ## ToDo: implement support for excel
+## ToDo: implement regression: linear, log
+## ToDo: implement log axis
+## ToDO: implement barchart
 
 class DataImport:
 
