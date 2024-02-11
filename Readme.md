@@ -8,17 +8,19 @@ by the user.
 ### Data input
 It does not matter if your data is organised in rows or columns, you just need to specify this during the script.
 It also does not matter if your data contains any nans, though strings could provide a problem.
-Your asked to provide the first cell and the last cell of your data:
+Your asked to provide the first cell and the last cell of your data to generate a data-table:
 | First cell | [...] | [...] | [...] |
 | --- | --- | --- | --- |
 | [...] | [...] | [...] | [...] |
 | [...] | [...] | [...] | last cell|
 
+It should contain all x-values, y-values and data-labels.
+
 #### Expectations from the script:
 Data organised in rows:
-![](/Users/scibook/Eigen/PhD/Python/Plotter/Harry Plotter/readme_imgs/data_in_rows.png)
+![](/readme_imgs/data_in_rows.png)
 Data organised in columns
-![](/Users/scibook/Eigen/PhD/Python/Plotter/Harry Plotter/readme_imgs/data_in_columns.png)
+![](/readme_imgs/data_in_columns.png)
 
 ### Operate script:
 Cells in the notebook where the wizard needs to take action are asigned with "Cast:"
