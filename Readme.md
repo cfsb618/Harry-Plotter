@@ -27,3 +27,7 @@ Cells in the notebook where the wizard needs to take action are asigned with "Ca
 all other cells can just be activated
 Hint: it is a good idea to use Shitf+Enter to jump through the script
 
+To adjust all the variables like marker and linestyle for each dataset, copy the settings
+with the indicated buttom for each dataset, then adjust accordingly
+![](readme_imgs/specify_ydata_props.png)
+
