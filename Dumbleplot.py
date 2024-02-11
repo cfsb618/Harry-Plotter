@@ -1,18 +1,23 @@
 import numpy as np
-import pandas as pd
+from sklearn.linear_model import LinearRegression
+
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 
+import pandas as pd
 from numbers_parser import Document
 from os import path as path
 import collections
 
-## ToDo: implement range for xlim, ylim
-## ToDo: implement support for excel
-## ToDo: implement regression: linear, log
-## ToDo: implement log axis
-## ToDO: implement barchart
+import random
+
+
+# ToDo: implement range for xlim, ylim
+# ToDo: implement support for excel
+# ToDo: implement regression: linear, log
+# ToDo: implement log axis
+# ToDO: implement barchart
 
 class DataImport:
 
@@ -80,13 +85,12 @@ class Data:
 
     def display_data(self):
         # make it display data after nan-removal
-        #print("x-data:")
-        #print(self.xdata)
-        #print("y-data:")
+        # print("x-data:")
+        # print(self.xdata)
+        # print("y-data:")
         for data in self.ydata:
             print("x:", self.ydata[data]["xdata"])
             print(data, ":", self.ydata[data]["data"])
-
 
     def get_idx_from_values(self, ydata):
         notnan_idx = []
@@ -118,6 +122,23 @@ class Data:
                 properties["xdata"] = self.xdata
 
 
+class Regression:
+
+    def linreg(self, x, y, dataname=None, do_linreg=False):
+        if do_linreg:
+            model = LinearRegression().fit(x, y)
+            r_sq = model.score(x, y)
+
+            if dataname is not None:
+                print(dataname, ":")
+            print("R^2:", "{:.3f}".format(r_sq))
+            print(f"y = {model.coef_} * x + ({model.intercept_})")
+
+            y_pred = model.predict(x)
+
+            return y_pred, model.coef_, model.intercept_
+
+
 class Plotter:
 
     def __init__(self, plot_properties):
@@ -128,7 +149,7 @@ class Plotter:
     def set_limits(self):
         if self.pp["x-range"][0] is not None:
             self.pp["x-range"][0] = self.pp["x-range"][0]
-            self.pp["x-range"][1]  = self.pp["x-range"][1]
+            self.pp["x-range"][1] = self.pp["x-range"][1]
         if self.pp["y-range"][0] is not None:
             self.pp["y-range"][0] = self.pp["y-range"][0]
             self.pp["y-range"][1] = self.pp["y-range"][1]
@@ -138,3 +159,21 @@ class Plotter:
             self.pp["xtick_number"] = ticker.MaxNLocator(self.pp["x-ticks"])
         if self.pp["y-ticks"] is not None:
             self.pp["ytick_number"] = ticker.MaxNLocator(self.pp["y-ticks"])
+
+    def cast_magic(self):
+        print("Accio plot!")
+        magic = random.randint(1, 6)
+        if magic == 1:
+            print("(｀･ᴗ･)━☆ﾟ･ﾟ:*❤")
+        elif magic == 2:
+            print("(੭⁰ᴗ⁰)━☆ﾟ.*")
+        elif magic == 3:
+            print("(੭⁰‿⁰)━☆ﾟ.*･｡ﾟ * ･ ｡")
+        elif magic == 4:
+            print("ଘ(੭චᴗච)━☆ﾟ.*･")
+        elif magic == 5:
+            print("(◞ꈍ∇ꈍ)⊃━☆ﾟ⋆*⋆.")
+        else:
+            print("(∩*✧ω✧)⊃━☆ﾟ.*･｡ﾟ")
+        print("*｡ﾟ")
+        print(" . ")
