@@ -19,15 +19,17 @@ It should contain all x-values, y-values and data-labels.
 #### Expectations from the script:
 Data organised in rows:
 ![](/readme_imgs/data_in_rows.png)
+
 Data organised in columns
 ![](/readme_imgs/data_in_columns.png)
 
 ### Operate script:
-Cells in the notebook where the wizard needs to take action are asigned with "Cast:"
-all other cells can just be activated
+Best is to use script with jupyter lab.
+Cells in the notebook, where the wizard needs to take action, are assigned with "Cast:"
+all other cells can just be activated without the need for aciton.
 Hint: it is a good idea to use Shitf+Enter to jump through the script
 
 To adjust all the variables like marker and linestyle for each dataset, copy the settings
 with the indicated buttom for each dataset, then adjust accordingly
-![](readme_imgs/specify_ydata_props.png)
 
+![](readme_imgs/specify_ydata_props.png)
