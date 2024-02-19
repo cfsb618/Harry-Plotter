@@ -23,13 +23,15 @@ Data organised in rows:
 Data organised in columns
 ![](/readme_imgs/data_in_columns.png)
 
+At least for .numbers files, it is good practice to name every column so they can be selected easily.
+
 ### Operate script:
 Best is to use script with jupyter lab.
 Cells in the notebook, where the wizard needs to take action, are assigned with "Cast:"
-all other cells can just be activated without the need for aciton.
-Hint: it is a good idea to use Shitf+Enter to jump through the script
+all other cells can just be activated without the need for action.
+Hint: it is a good idea to use Shift+Enter to jump through the script
 
 To adjust all the variables like marker and linestyle for each dataset, copy the settings
-with the indicated buttom for each dataset, then adjust accordingly
+with the indicated button for each dataset, then adjust accordingly.
 
 ![](readme_imgs/specify_ydata_props.png)

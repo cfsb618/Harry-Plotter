@@ -1,22 +1,16 @@
-import numpy as np
 from sklearn.linear_model import LinearRegression
 
-import matplotlib.pyplot as plt
 from matplotlib import ticker
-from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 
 import pandas as pd
 from numbers_parser import Document
 from os import path as path
-import collections
 
 import random
 
 
-# ToDo: implement range for xlim, ylim
 # ToDo: implement support for excel
-# ToDo: implement regression: linear, log
-# ToDo: implement log axis
+# ToDo: implement regression: exponential
 # ToDO: implement barchart
 
 class DataImport:
@@ -56,32 +50,54 @@ class Data:
         rlc, clc = last_cell
         self.data_table = dataframe.loc[rfc:rlc, cfc:clc]
 
-    def make_dict(self):
-        for n in range(self.n_datasets):
-
-            if self.row_or_column == "columns":
-                for col in range(1,
-                                 len(self.data_table.columns)):  # starts at 1, assumes that x-data is stored in column 0
-                    self.dataset_properties["data"] = self.data_table.iloc[:, col]
-                    self.dataset_properties["name"] = self.data_table.columns[col]
-
-            elif self.row_or_column == "rows":
-                for row in range(1, self.data_table.shape[0]):
-                    self.dataset_properties["data"] = self.data_table.iloc[row, 1:]
-                    self.dataset_properties["name"] = self.data_table.iloc[
-                        row, 0]  # assumes that data labels are in the first column
-
-            else:
-                raise Exception("Error: typo or wrong input, row_or_column needs to be set to column or row")
-
-            self.ydata[n] = self.dataset_properties
-
-    def get_xdata(self):
-        if self.row_or_column == "column":
-            self.xdata = self.data_table.iloc[:, 0]  # Assumption: x-data is stored in first column
+    def make_dict(self, data_in_head):
+        # r: start at the correct row
+        # offset: adjust for row start, so ydata always starts with "1", necessary to use jupyter script
+        if data_in_head is True:
+            r = 0
+            offset = 1
         else:
-            self.xdata = self.data_table.iloc[0, 1:]  # Assumption: x-data is stored in first row
-            # first cell contains x-data name or can be empty
+            r = 1
+            offset = 0
+
+        if self.row_or_column == "columns":
+            for col in range(1,
+                             len(self.data_table.columns)):  # starts at 1, assumes that x-data is stored in column 0
+                self.dataset_properties["data"] = self.data_table.iloc[:, col]
+                self.dataset_properties["name"] = self.data_table.columns[col]
+                self.ydata[col] = self.dataset_properties.copy()
+
+        elif self.row_or_column == "rows":
+            for row in range(r, self.data_table.shape[0]):
+                self.dataset_properties["data"] = self.data_table.iloc[row, 1:]
+                self.dataset_properties["name"] = self.data_table.iloc[
+                    row, 0]  # assumes that data labels are in the first column
+                self.ydata[row+offset] = self.dataset_properties.copy()
+
+        else:
+            raise Exception("Error: typo or wrong input"
+                            "data_organised_in_rows_or_columns needs to be set to column or row")
+
+    def get_xdata(self, data_in_head):
+        if data_in_head is False:
+            if self.row_or_column == "column":
+                self.xdata = self.data_table.iloc[:, 0]  # Assumption: x-data is stored in first column
+            else:
+                self.xdata = self.data_table.iloc[0, 1:]  # Assumption: x-data is stored in first row
+                # first cell contains x-data name or can be empty
+        else:
+            head_list = []
+            for col in self.data_table.columns:
+                head_list.append(col)
+            head_list.pop(0)
+            self.xdata = pd.DataFrame(head_list)
+
+    def uncast(self, rows_to_remove):
+        if rows_to_remove is not None:
+            if self.row_or_column == "rows":
+                self.data_table.drop(rows_to_remove, inplace=True)
+            elif self.row_or_column == "columns":
+                self.data_table.drop(rows_to_remove, axis=1, inplace=True)
 
     def display_data(self):
         # make it display data after nan-removal
@@ -160,8 +176,42 @@ class Plotter:
         if self.pp["y-ticks"] is not None:
             self.pp["ytick_number"] = ticker.MaxNLocator(self.pp["y-ticks"])
 
+    def set_lin_log(self):
+        if self.pp["xaxis-type"] == "lin":
+            xaxistype = "linear"
+        elif self.pp["xaxis-type"] == "log":
+            xaxistype = "log"
+        else:
+            raise Exception("Error: xaxis-type needs to be set to lin or log")
+
+        if self.pp["yaxis-type"] == "lin":
+            yaxistype = "linear"
+        elif self.pp["yaxis-type"] == "log":
+            yaxistype = "log"
+        else:
+            raise Exception("Error: yaxis-type needs to be set to lin or log")
+
+        return xaxistype, yaxistype
+
+    def minor_locator(self):
+        if self.pp["xaxis-type"] == "log":
+            xminor = None
+        elif self.pp["x-minor"] is int:
+            xminor = self.pp["x-minor"]
+        else:
+            xminor = None
+
+        if self.pp["yaxis-type"] == "log":
+            yminor = None
+        elif self.pp["y-minor"] is int:
+            yminor =  self.pp["y-minor"]
+        else:
+            yminor = None
+        return xminor, yminor
+
     def cast_magic(self):
         print("Accio plot!")
+        print("｡ﾟ.")
         magic = random.randint(1, 6)
         if magic == 1:
             print("(｀･ᴗ･)━☆ﾟ･ﾟ:*❤")
