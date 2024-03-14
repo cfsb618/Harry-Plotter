@@ -9,32 +9,35 @@ from os import path as path
 import random
 
 
-# ToDo: implement support for excel
-# ToDo: implement regression: exponential
-# ToDO: implement barchart
+# TODO: implement support for excel
+# TODO: implement support for csv
+# TODO: implement regression: exponential
+# TODO: implement barchart
+# TODO: URGENT: remove dictionary as dataset (see jupyter notebook)
+# TODO: URGENT: change code, data from numbers should be a df at some point
+# TODO: need to specify x and y data better: one point where x data gets specified and one where y data get specified.
+# TODO: no nan-deletion for manual data selection rn
 
 class DataImport:
 
     def __init__(self, pathtofile, filename):
         self.pathtofile = pathtofile
         self.filename = filename
-
-    def choose_destiny(self):
-        print("not done yet :/")
-        # get file extension
-        # set import document according to file extension
-        # set variables that are related to file; rn it is set to .numbers
-        # but .column[] for example is different for Excel and numbers
+        self.ext = None
+        self.df = None
 
     def import_data(self, sheet_nr=None, table_nr=None):
         filepath = path.join(self.pathtofile, self.filename)
+        _, self.ext = path.splitext(path.basename(filepath))
 
-        # Import for .numbers:
-        doc = Document(filepath)
-        sheets = doc.sheets
-        tables = sheets[sheet_nr].tables
-        data = tables[table_nr].rows(values_only=True)
-        self.df = pd.DataFrame(data[1:], columns=data[0])
+        if self.ext == ".numbers":
+            doc = Document(filepath)
+            sheets = doc.sheets
+            tables = sheets[sheet_nr].tables
+            data = tables[table_nr].rows(values_only=True)
+            self.df = pd.DataFrame(data[1:], columns=data[0])
+        elif self.ext == ".csv":
+            self.df = pd.read_csv(filepath)
 
 
 class Data:
@@ -44,13 +47,15 @@ class Data:
         self.dataset_properties = {}
         self.ydata = {}  # necessary to use second dict?
         self.row_or_column = row_or_column
+        self.data_table = None
+        self.xdata = None
 
     def get_data(self, dataframe, first_cell, last_cell):  # better to get cells from __init__()?
         rfc, cfc = first_cell
         rlc, clc = last_cell
         self.data_table = dataframe.loc[rfc:rlc, cfc:clc]
 
-    def make_dict(self, data_in_head):
+    def make_dict_automatic(self, data_in_head):
         # r: start at the correct row
         # offset: adjust for row start, so ydata always starts with "1", necessary to use jupyter script
         if data_in_head is True:
@@ -76,9 +81,34 @@ class Data:
 
         else:
             raise Exception("Error: typo or wrong input"
-                            "data_organised_in_rows_or_columns needs to be set to column or row")
+                            "data_organised_in_rows_or_columns needs to be set to columns or rows")
 
-    def get_xdata(self, data_in_head):
+    def make_dict_manual(self, y_data_idx):
+        # r: start at the correct row
+        # offset: adjust for row start, so ydata always starts with "1", necessary to use jupyter script
+        n = 1
+        if self.row_or_column == "columns":
+            for col in y_data_idx:  # starts at 1, assumes that x-data is stored in column 0
+                self.dataset_properties["data"] = self.data_table.iloc[:, col]
+                self.dataset_properties["name"] = self.data_table.columns[col]
+                print("added column:", self.dataset_properties["name"])
+                self.ydata[n] = self.dataset_properties.copy()
+                n += 1
+
+        elif self.row_or_column == "rows":
+            for row in y_data_idx:
+                self.dataset_properties["data"] = self.data_table.iloc[row, 1:]
+                self.dataset_properties["name"] = self.data_table.iloc[
+                    row, 0]  # assumes that data labels are in the first column
+                print("added row:", self.dataset_properties["name"])
+                self.ydata[n] = self.dataset_properties.copy()
+                n += 1
+
+        else:
+            raise Exception("Error: typo or wrong input"
+                            "data_organised_in_rows_or_columns needs to be set to columns or rows")
+
+    def get_xdata_automatic(self, data_in_head):
         if data_in_head is False:
             if self.row_or_column == "column":
                 self.xdata = self.data_table.iloc[:, 0]  # Assumption: x-data is stored in first column
@@ -91,6 +121,23 @@ class Data:
                 head_list.append(col)
             head_list.pop(0)
             self.xdata = pd.DataFrame(head_list)
+
+    def get_xdata_manual(self, x_data_idx):
+        n = 1
+        if self.row_or_column == "columns":
+            for col in x_data_idx:
+                self.xdata = None
+                self.xdata = self.data_table.iloc[:, col]
+                self.ydata[n]["xdata"] = self.xdata
+                n += 1
+
+        elif self.row_or_column == "rows":
+            for row in x_data_idx:
+                self.xdata = None
+                self.xdata = self.data_table.iloc[row, 1:]
+
+                self.ydata[n]["xdata"] = self.xdata
+                n += 1
 
     def uncast(self, rows_to_remove):
         if rows_to_remove is not None:
@@ -196,15 +243,15 @@ class Plotter:
     def minor_locator(self):
         if self.pp["xaxis-type"] == "log":
             xminor = None
-        elif self.pp["x-minor"] is int:
+        elif self.pp["x-minor"] is not None:
             xminor = self.pp["x-minor"]
         else:
             xminor = None
 
         if self.pp["yaxis-type"] == "log":
             yminor = None
-        elif self.pp["y-minor"] is int:
-            yminor =  self.pp["y-minor"]
+        elif self.pp["y-minor"] is not None:
+            yminor = self.pp["y-minor"]
         else:
             yminor = None
         return xminor, yminor
