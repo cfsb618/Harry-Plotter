@@ -9,14 +9,14 @@ from os import path as path
 import random
 
 
+# TODO: add data from second table to plot
+
 # TODO: implement support for excel
-# TODO: implement support for csv
 # TODO: implement regression: exponential
 # TODO: implement barchart
-# TODO: URGENT: remove dictionary as dataset (see jupyter notebook)
-# TODO: URGENT: change code, data from numbers should be a df at some point
-# TODO: need to specify x and y data better: one point where x data gets specified and one where y data get specified.
+# TODO: URGENT: remove dictionary as dataset (see jupyter notebook)(what?)
 # TODO: no nan-deletion for manual data selection rn
+
 
 class DataImport:
 
@@ -36,70 +36,54 @@ class DataImport:
             tables = sheets[sheet_nr].tables
             data = tables[table_nr].rows(values_only=True)
             self.df = pd.DataFrame(data[1:], columns=data[0])
+            #self.df.set_index(list(self.df)[0], inplace=True)
         elif self.ext == ".csv":
             self.df = pd.read_csv(filepath)
 
 
 class Data:
 
-    def __init__(self, n_datasets, row_or_column):
-        self.n_datasets = n_datasets
+    def __init__(self, row_or_column):
         self.dataset_properties = {}
         self.ydata = {}  # necessary to use second dict?
         self.row_or_column = row_or_column
         self.data_table = None
-        self.xdata = None
+        self.xdata = []
 
     def get_data(self, dataframe, first_cell, last_cell):  # better to get cells from __init__()?
         rfc, cfc = first_cell
         rlc, clc = last_cell
         self.data_table = dataframe.loc[rfc:rlc, cfc:clc]
 
-    def make_dict_automatic(self, data_in_head):
-        # r: start at the correct row
-        # offset: adjust for row start, so ydata always starts with "1", necessary to use jupyter script
-        if data_in_head is True:
-            r = 0
-            offset = 1
-        else:
-            r = 1
-            offset = 0
-
-        if self.row_or_column == "columns":
-            for col in range(1,
-                             len(self.data_table.columns)):  # starts at 1, assumes that x-data is stored in column 0
-                self.dataset_properties["data"] = self.data_table.iloc[:, col]
-                self.dataset_properties["name"] = self.data_table.columns[col]
-                self.ydata[col] = self.dataset_properties.copy()
-
-        elif self.row_or_column == "rows":
-            for row in range(r, self.data_table.shape[0]):
-                self.dataset_properties["data"] = self.data_table.iloc[row, 1:]
-                self.dataset_properties["name"] = self.data_table.iloc[
-                    row, 0]  # assumes that data labels are in the first column
-                self.ydata[row+offset] = self.dataset_properties.copy()
-
-        else:
-            raise Exception("Error: typo or wrong input"
-                            "data_organised_in_rows_or_columns needs to be set to columns or rows")
-
-    def make_dict_manual(self, y_data_idx):
+    def make_dict(self, y_data_idx, ext, first_cell, idx):
         # r: start at the correct row
         # offset: adjust for row start, so ydata always starts with "1", necessary to use jupyter script
         n = 1
         if self.row_or_column == "columns":
             for col in y_data_idx:  # starts at 1, assumes that x-data is stored in column 0
-                self.dataset_properties["data"] = self.data_table.iloc[:, col]
-                self.dataset_properties["name"] = self.data_table.columns[col]
+                if idx is True:
+                    self.dataset_properties["data"] = self.data_table.iloc[:, col]
+                else:
+                    self.dataset_properties["data"] = self.data_table.loc[:, col]
+
+                self.dataset_properties["name"] = col
                 print("added column:", self.dataset_properties["name"])
                 self.ydata[n] = self.dataset_properties.copy()
                 n += 1
 
         elif self.row_or_column == "rows":
             for row in y_data_idx:
-                self.dataset_properties["data"] = self.data_table.iloc[row, 1:]
-                self.dataset_properties["name"] = self.data_table.iloc[
-                    row, 0]  # assumes that data labels are in the first column
+                if idx is True:
+                    self.dataset_properties["data"] = self.data_table.iloc[row, 1:]
+                else:
+                    # gets index of input name
+                    if ext == ".numbers":
+                        row_idx = self.data_table.loc[self.data_table[first_cell[1]] == row].index[0]
+                        self.dataset_properties["data"] = self.data_table.iloc[row_idx, 1:]
+                        self.dataset_properties["name"] = row
+                    else:
+                        self.dataset_properties["data"] = self.data_table.loc[row, 1:]
+                        self.dataset_properties["name"] = row
                 print("added row:", self.dataset_properties["name"])
                 self.ydata[n] = self.dataset_properties.copy()
                 n += 1
@@ -108,13 +92,21 @@ class Data:
             raise Exception("Error: typo or wrong input"
                             "data_organised_in_rows_or_columns needs to be set to columns or rows")
 
-    def get_xdata_automatic(self, data_in_head):
+    def get_xdata(self, data_in_head, x_data_idx, idx):
         if data_in_head is False:
-            if self.row_or_column == "column":
-                self.xdata = self.data_table.iloc[:, 0]  # Assumption: x-data is stored in first column
+            if self.row_or_column == "columns":
+                # Assumption: x-data is stored in first column
+                for col in x_data_idx:
+                    if idx is True:
+                        self.xdata.append(self.data_table.iloc[:, col])
+                    else:
+                        self.xdata.append(self.data_table.loc[:, col])
             else:
-                self.xdata = self.data_table.iloc[0, 1:]  # Assumption: x-data is stored in first row
+                # Assumption: x-data is stored in first row
                 # first cell contains x-data name or can be empty
+                for row in x_data_idx:
+                    self.xdata.append(self.data_table.iloc[0, row:])
+
         else:
             head_list = []
             for col in self.data_table.columns:
@@ -122,29 +114,22 @@ class Data:
             head_list.pop(0)
             self.xdata = pd.DataFrame(head_list)
 
-    def get_xdata_manual(self, x_data_idx):
+    def get_errorbar(self, errorbars):
         n = 1
-        if self.row_or_column == "columns":
-            for col in x_data_idx:
-                self.xdata = None
-                self.xdata = self.data_table.iloc[:, col]
-                self.ydata[n]["xdata"] = self.xdata
-                n += 1
+        if errorbars[0] is not None:
+            if self.row_or_column == "columns":
+                for col in errorbars:  # starts at 1, assumes that x-data is stored in column 0
+                    self.ydata[n]["error"] = self.data_table.loc[:, col]
+                    n += 1
 
-        elif self.row_or_column == "rows":
-            for row in x_data_idx:
-                self.xdata = None
-                self.xdata = self.data_table.iloc[row, 1:]
-
-                self.ydata[n]["xdata"] = self.xdata
-                n += 1
-
-    def uncast(self, rows_to_remove):
-        if rows_to_remove is not None:
-            if self.row_or_column == "rows":
-                self.data_table.drop(rows_to_remove, inplace=True)
-            elif self.row_or_column == "columns":
-                self.data_table.drop(rows_to_remove, axis=1, inplace=True)
+            elif self.row_or_column == "rows":
+                for row in errorbars:
+                    self.ydata[n]["error"] = self.data_table.loc[row, 1:]
+                    n += 1
+        else:
+            for i in range(len(self.ydata)):
+                n = i + 1
+                self.ydata[n]["error"] = None
 
     def display_data(self):
         # make it display data after nan-removal
@@ -155,6 +140,7 @@ class Data:
             print("x:", self.ydata[data]["xdata"])
             print(data, ":", self.ydata[data]["data"])
 
+    @staticmethod
     def get_idx_from_values(self, ydata):
         notnan_idx = []
         iterator = iter(ydata.notna())
@@ -163,11 +149,12 @@ class Data:
                 notnan_idx.append(i)
         return notnan_idx
 
-    def get_values(self, notnanidx, ydata):
+    @staticmethod
+    def get_values(self, notnanidx, ydata, xdata):
         x_corresponding = []
         y_corresponding = []
         for i in notnanidx:
-            x_corresponding.append(self.xdata.iloc[i])
+            x_corresponding.append(xdata.iloc[i])
             y_corresponding.append(ydata.iloc[i])
         return x_corresponding, y_corresponding
 
@@ -175,14 +162,19 @@ class Data:
     # if nan found, deletes it and the corresponding xdata
     def delete_nans(self):
         for dataset, properties in self.ydata.items():
-            specific_dataset = self.ydata[dataset]
-            ydata = specific_dataset["data"]
+            ydata = self.ydata[dataset]["data"]
+
             if ydata.isna().any():
+                if len(self.xdata) > 1:
+                    xdata = self.xdata[dataset]
+                else:
+                    xdata = self.xdata[0]
+                print("Found NaN value")
                 notnanidxlist = self.get_idx_from_values(ydata)
-                x_vals, y_vals = self.get_values(notnanidxlist, ydata)
+                x_vals, y_vals = self.get_values(notnanidxlist, ydata, xdata)
                 properties["xdata"], properties["data"] = x_vals, y_vals
             else:
-                properties["xdata"] = self.xdata
+                properties["xdata"] = self.xdata[0]
 
 
 class Regression:
