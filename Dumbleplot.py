@@ -9,13 +9,11 @@ from os import path as path
 import random
 
 
-# TODO: add data from second table to plot
-
 # TODO: implement support for excel
 # TODO: implement regression: exponential
 # TODO: implement barchart
-# TODO: URGENT: remove dictionary as dataset (see jupyter notebook)(what?)
-# TODO: no nan-deletion for manual data selection rn
+# TODO: no nan-deletion for manual data rn
+# TODO: implement column wise organised data analysis
 
 
 class DataImport:
@@ -43,76 +41,45 @@ class DataImport:
 
 class Data:
 
-    def __init__(self, row_or_column):
-        self.dataset_properties = {}
-        self.ydata = {}  # necessary to use second dict?
-        self.row_or_column = row_or_column
-        self.data_table = None
+    def __init__(self):
+        self.ydata = []
         self.xdata = []
+        self.dataset = {}
+        self.properties = {}
+        self.data_names = []
+        self.plot_properties = []
+        self.errorbars = []
 
-    def get_data(self, dataframe, first_cell, last_cell):  # better to get cells from __init__()?
-        rfc, cfc = first_cell
-        rlc, clc = last_cell
-        self.data_table = dataframe.loc[rfc:rlc, cfc:clc]
+    def get_data(self, column_idx, y_column_names, x_column, df):
+        for i in y_column_names:
+            self.ydata.append(df[i][0:column_idx+1])
+            self.xdata.append(df[x_column][0:column_idx+1])
+            self.data_names.append(i)
 
-    def make_dict(self, y_data_idx, ext, first_cell, idx):
-        # r: start at the correct row
-        # offset: adjust for row start, so ydata always starts with "1", necessary to use jupyter script
-        n = 1
-        if self.row_or_column == "columns":
-            for col in y_data_idx:  # starts at 1, assumes that x-data is stored in column 0
-                if idx is True:
-                    self.dataset_properties["data"] = self.data_table.iloc[:, col]
-                else:
-                    self.dataset_properties["data"] = self.data_table.loc[:, col]
-
-                self.dataset_properties["name"] = col
-                print("added column:", self.dataset_properties["name"])
-                self.ydata[n] = self.dataset_properties.copy()
-                n += 1
-
-        elif self.row_or_column == "rows":
-            for row in y_data_idx:
-                if idx is True:
-                    self.dataset_properties["data"] = self.data_table.iloc[row, 1:]
-                else:
-                    # gets index of input name
-                    if ext == ".numbers":
-                        row_idx = self.data_table.loc[self.data_table[first_cell[1]] == row].index[0]
-                        self.dataset_properties["data"] = self.data_table.iloc[row_idx, 1:]
-                        self.dataset_properties["name"] = row
-                    else:
-                        self.dataset_properties["data"] = self.data_table.loc[row, 1:]
-                        self.dataset_properties["name"] = row
-                print("added row:", self.dataset_properties["name"])
-                self.ydata[n] = self.dataset_properties.copy()
-                n += 1
-
+    def get_errors(self, column_idx, errorbars, df):
+        if errorbars is not None:
+            for i in errorbars:
+                self.errorbars.append(df[i][0:column_idx+1])
         else:
-            raise Exception("Error: typo or wrong input"
-                            "data_organised_in_rows_or_columns needs to be set to columns or rows")
+            self.errorbars.append(None)
 
-    def get_xdata(self, data_in_head, x_data_idx, idx):
-        if data_in_head is False:
-            if self.row_or_column == "columns":
-                # Assumption: x-data is stored in first column
-                for col in x_data_idx:
-                    if idx is True:
-                        self.xdata.append(self.data_table.iloc[:, col])
-                    else:
-                        self.xdata.append(self.data_table.loc[:, col])
+    def construct_dict(self):
+        for i in range(len(self.ydata)):
+            properties = {}
+            properties["ydata"] = self.ydata[i]
+            properties["xdata"] = self.xdata[i]
+            properties["name"] = self.data_names[i]
+
+            if len(self.errorbars) > 1:
+                properties["errorbars"] = self.errorbars[i]
             else:
-                # Assumption: x-data is stored in first row
-                # first cell contains x-data name or can be empty
-                for row in x_data_idx:
-                    self.xdata.append(self.data_table.iloc[0, row:])
+                properties["errorbars"] = None
 
-        else:
-            head_list = []
-            for col in self.data_table.columns:
-                head_list.append(col)
-            head_list.pop(0)
-            self.xdata = pd.DataFrame(head_list)
+            properties["marker"] = self.plot_properties[i]["marker"]
+            properties["color"] = self.plot_properties[i]["color"]
+            properties["linestyle"] = self.plot_properties[i]["linestyle"]
+            properties["regression"] = self.plot_properties[i]["regression"]
+            self.dataset[i] = properties.copy()
 
     def get_errorbar(self, errorbars):
         n = 1
@@ -130,15 +97,6 @@ class Data:
             for i in range(len(self.ydata)):
                 n = i + 1
                 self.ydata[n]["error"] = None
-
-    def display_data(self):
-        # make it display data after nan-removal
-        # print("x-data:")
-        # print(self.xdata)
-        # print("y-data:")
-        for data in self.ydata:
-            print("x:", self.ydata[data]["xdata"])
-            print(data, ":", self.ydata[data]["data"])
 
     @staticmethod
     def get_idx_from_values(self, ydata):
