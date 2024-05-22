@@ -56,47 +56,32 @@ class Data:
             self.xdata.append(df[x_column][0:column_idx+1])
             self.data_names.append(i)
 
-    def get_errors(self, column_idx, errorbars, df):
-        if errorbars is not None:
-            for i in errorbars:
+    def get_errors(self, column_idx, errorbars, y_column_name, df):
+        for i in errorbars:
+            if i != "None":
                 self.errorbars.append(df[i][0:column_idx+1])
-        else:
-            self.errorbars.append(None)
+        
+            else:
+                self.errorbars.append(pd.Series(data=0))
 
     def construct_dict(self):
         for i in range(len(self.ydata)):
-            properties = {}
-            properties["ydata"] = self.ydata[i]
-            properties["xdata"] = self.xdata[i]
-            properties["name"] = self.data_names[i]
+            properties = {"ydata": self.ydata[i], "xdata": self.xdata[i], "name": self.data_names[i],
+                          "marker": self.plot_properties[i]["marker"], "color": self.plot_properties[i]["color"],
+                          "linestyle": self.plot_properties[i]["linestyle"],
+                          "regression": self.plot_properties[i]["regression"]}
 
             if len(self.errorbars) > 1:
-                properties["errorbars"] = self.errorbars[i]
+                print(i)
+                if self.errorbars[i].any() == 0:
+                    properties["errorbars"] = None
+                else:
+                    properties["errorbars"] = self.errorbars[i]
             else:
                 properties["errorbars"] = None
 
-            properties["marker"] = self.plot_properties[i]["marker"]
-            properties["color"] = self.plot_properties[i]["color"]
-            properties["linestyle"] = self.plot_properties[i]["linestyle"]
-            properties["regression"] = self.plot_properties[i]["regression"]
             self.dataset[i] = properties.copy()
 
-    def get_errorbar(self, errorbars):
-        n = 1
-        if errorbars[0] is not None:
-            if self.row_or_column == "columns":
-                for col in errorbars:  # starts at 1, assumes that x-data is stored in column 0
-                    self.ydata[n]["error"] = self.data_table.loc[:, col]
-                    n += 1
-
-            elif self.row_or_column == "rows":
-                for row in errorbars:
-                    self.ydata[n]["error"] = self.data_table.loc[row, 1:]
-                    n += 1
-        else:
-            for i in range(len(self.ydata)):
-                n = i + 1
-                self.ydata[n]["error"] = None
 
     @staticmethod
     def get_idx_from_values(self, ydata):
